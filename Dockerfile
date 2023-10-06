@@ -77,16 +77,24 @@
 #   accessed directly. (example: "foo.example.com,bar.example.com")
 #
 ###
+FROM maven:latest AS build
+COPY --chown=185 src /usr/src/app/src
+COPY --chown=185 pom.xml /usr/src/app
+RUN mvn -f /usr/src/app/pom.xml clean package
+
 FROM registry.access.redhat.com/ubi8/openjdk-11:1.16
 
 ENV LANGUAGE='en_US:en'
 
-
+COPY --from=build /usr/src/app/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=build /usr/src/app/target/quarkus-app/*.jar /deployments/
+COPY --from=build /usr/src/app/target/quarkus-app/app/ /deployments/app/
+COPY --from=build /usr/src/app/target/quarkus-app/quarkus/ /deployments/quarkus/
 # We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+#COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
+#COPY --chown=185 target/quarkus-app/*.jar /deployments/
+#COPY --chown=185 target/quarkus-app/app/ /deployments/app/
+#COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 USER 185
